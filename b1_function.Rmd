@@ -1,0 +1,59 @@
+---
+title: "Assignment B1"
+author: "Andrew J. Fullerton"
+date: "2024-10-31"
+output: github_document
+---
+
+
+### Exercise 1
+```{r}
+
+basic_stats <- function(data, x, by, na.rm = TRUE) {
+  library(tidyverse)
+  
+  if(!is.data.frame(data) && !is_tibble(data)) {
+    stop("Error: input data must be a dataframe or a tibble")
+  }
+  
+  data <- as_tibble(data)
+  
+  if(!all(c(deparse(substitute(x)), deparse(substitute(by))) %in% names(data))) {
+    stop("Error: the variables you've chosen do not exist in your data")
+  }
+  
+  if (!is.numeric(data |> pull({{x}}))) {
+    stop("Error: ", deparse(substitute(x)), " is not numeric.")
+  }
+  
+  if (!is.factor(data |> pull({{by}}))) {
+    stop("Error: the grouping variable, ", deparse(substitute(by)), ", is not a factor.")
+  }
+  
+  if (length(levels(data |> pull({{by}}))) < 2) {
+    stop("Error: The grouping variable ", deparse(substitute(by)), " must have at least two levels.")
+  }
+  
+  # the function
+  data |>
+    group_by({{by}}) |>
+      summarise(mean = mean({{x}}, na.rm = na.rm),
+                median = median({{x}}, na.rm = na.rm),
+                range = paste0(min({{x}}, na.rm = na.rm), " - ",
+                              max({{x}}, na.rm = na.rm)),
+                n = n())
+}
+
+
+```
+
+
+```{r}
+library(palmerpenguins)
+
+head(penguins)
+
+basic_stats(penguins, bill_length_mm, island)
+```
+
+
