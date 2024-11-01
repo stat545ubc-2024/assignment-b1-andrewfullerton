@@ -10,8 +10,26 @@ output: github_document
 library(tidyverse)
 ```
 
-
 ```{r}
+#' @title Basic Summary Statistics by Strata
+#' @description Basic function to calculate summary statistics within levels of a categorical variable.
+#'
+#' @param data a dataframe or tibble containing `x` and `by`.
+#' @param x a numeric variable in the dataset to compute summary statistics for. `x` was chosen as a name since it is commonly used as a standard name for the primary function argument.
+#' @param by a categorical variable in the dataset by which to compute summary statistics. `by` was chosen as a name since it is is suggestive of the argument's purpose in specifying the categorical variable by which to display the summary statistics.
+#' @param na.rm a logical evaluation to TRUE or FALSE indicating whether NA values should be stripped. Default is TRUE. `na.rm` was chosen to be consistent with usage and nomenclature in other functions in R.
+#' @param ... for further arguments to modify the computation and output.
+#'
+#' @return a tibble with mean, median, range, and sample size by strata.
+#' @import tidyverse
+#'
+#' @examples
+#' # Basic usage:
+#' basic_stats(penguins, bill_length_mm, species) # displays summary stats by species
+#' # Advanced usage:
+#' basic_stats(penguins, bill_length_mm, species, trim = 0.1) # trims 10% of largest/smallest values when computing mean
+#' # Incorrect usage:
+#' basic_stats(penguins, bill_length_mm, c(species, island)) # only one grouping var may be used
 basic_stats <- function(data, x, by, na.rm = TRUE, ...) {
   # Check if input 'data' is a non-empty dataframe or tibble
   if (!is.data.frame(data) || nrow(data) == 0 || ncol(data) == 0) {
@@ -28,22 +46,25 @@ basic_stats <- function(data, x, by, na.rm = TRUE, ...) {
   # Check if 'x' exists and is numeric
   if (!x_name %in% names(data)) {
     stop(x_name, " not found in the data.")
-  } 
-  
-  if (!is.numeric(data |> pull({{x}}))) {
+  } else if (length(na.omit(data |> pull({{ x }}))) == 0) {
+    stop(x_name, " doesn't contain any non-missing values.")
+  } else if (!is.numeric(data |> pull({{ x }}))) {
     stop("Variable ", x_name, " must be numeric.")
   }
 
   # Check if 'by' exists and is usable
   if (!by_name %in% names(data)) {
     stop("Grouping variable ", by_name, " not found in the data.")
-  } 
+  } else if (length(na.omit(data |> pull({{ by }}))) == 0) {
+    stop("Grouping variable ", by_name, "doesn't contain any non-missing values.")
+  }
   
   by_var <- data |> pull({{ by }})
   
   if (!is.factor(by_var)) {
     unique_count <- length(unique(by_var))
-    if (is.character(by_var) && unique_count < 20 && unique_count > 0) {
+    
+    if (is.character(by_var) && unique_count < 20) {
       data <- data |> mutate({{ by }} := as.factor({{ by }}))
       warning(by_name, " has been converted to a factor with ", unique_count, " levels.")
     } else {
@@ -52,18 +73,18 @@ basic_stats <- function(data, x, by, na.rm = TRUE, ...) {
   }
   
   # Final check for for 'by' and subgrouping factor levels
-  if (length(levels(by_var)) < 2) {
+  if (length(unique(by_var)) < 2) {
     warning("Grouping variable ", by_name, " only has 1 level.")
   }
 
   # Run the summary
   result <- data |>
-    group_by({{by}}, ...) |>
+    group_by({{ by }}) |>
     summarise(
-      mean = mean({{x}}, na.rm = na.rm),
-      median = median({{x}}, na.rm = na.rm),
-      range = paste0(min({{x}}, na.rm = na.rm), " - ",
-                     max({{x}}, na.rm = na.rm)),
+      mean = mean({{ x }}, na.rm = na.rm, ...),
+      median = median({{ x }}, na.rm = na.rm, ...),
+      range = paste0(min({{ x }}, na.rm = na.rm, ...), " - ",
+                     max({{ x }}, na.rm = na.rm, ...)),
       n = n(),
       .groups = "drop"
     )
@@ -78,90 +99,67 @@ basic_stats <- function(data, x, by, na.rm = TRUE, ...) {
 To demonstrate how this function works (and doesn't work), we can use a tried and true dataset: Iris! Iris is a dataframe composed of 5 variables: 4 numeric that measure dimensions of the flowers, and 1 factor variable that specifies the species. We also see that we have 150 rows of data.
 
 ```{r}
-head(iris)
+library(palmerpenguins)
+
+head(penguins)
 ```
 
 ### How it works:
-
 `basic_stats()` takes as input a dataframe or tibble, a numeric variable to compute summary statistics for, and a grouping by variable by which to stratify those summary statistics. Let's see it in action:
-
 ```{r}
-basic_stats(iris, Sepal.Length, Species)
+basic_stats(penguins, bill_length_mm, species)
 ```
 
-Wow! It's like magic.
-
-To be `base R` friendly and `tidyverse` friendly, `basic_stats()` accepts either a dataframe or a tibble as input data. Here's an example with Iris as a `df`...
-
+To be `base R` friendly and `tidyverse` friendly, `basic_stats()` accepts either a dataframe or a tibble as input data. Here's an example with `penguins` as a `df`:
 ```{r}
-basic_stats(iris, Sepal.Length, Species)
+penguins |> as.data.frame() |>
+  basic_stats(bill_length_mm, species)
 ```
 
-... and here's an example using Iris as a `tibble`. In both cases, the final output is a tibble (courtesy of `dplyr`).
-
+Here's an example using `penguins` as a `tibble`. Regardless of whether or not a dataframe or a tibble is passed in, the final output is a tibble.
 ```{r}
-iris |> as_tibble() |>
-  basic_stats(Sepal.Length, Species)
+penguins |> as_tibble() |>
+  basic_stats(bill_length_mm, species)
 ```
 
-Sometimes when we import a dataset into R, our categorical variables will be classified as `chr` variables. For this reason, the `by` argument can accept either a `fctr` or a `chr`. It should, however, be noted that this function assumes that a `chr` variable with more than 20 unique levels is, in fact, storing text data rather than categorical data; to avoid printing hundred of stratified statistics, the function will throw an error instead of converting the `chr` to a `fctr`. Here's an example with Species as a `fctr`...
-
+Sometimes when we import a dataset into R, our categorical variables will be classified as `chr` variables. For this reason, the `by` argument can accept either a `fctr` or a `chr`. It should, however, be noted that this function assumes that a `chr` variable with more than 20 unique levels is, in fact, storing text data rather than categorical data; to avoid printing hundred of stratified statistics, the function will throw an error instead of converting the `chr` to a `fctr`. Here's an example with species as a `fctr`:
 ```{r}
-basic_stats(iris, Sepal.Length, Species)
+basic_stats(penguins, bill_length_mm, species)
 ```
 
-... and here's an example using Species as a `chr` - as you can see, the outputs are identical ...
-
-```{r warning=TRUE}
-iris |> mutate(Species = as.character(Species)) |>
-  basic_stats(Sepal.Length, Species)
+Here's an example passing species into our function as a `chr`. In the code below, we're converting `species` from a factor into a character before passing it into our function. The outputs are identical, except for a warning to let us know that the character variable we passed into the function has been converted to a factor.
+```{r}
+penguins |> mutate(species = as.character(species)) |>
+  basic_stats(bill_length_mm, species)
 ```
 
-... and here's a one more example using Sepal.Width as a `chr` resulting in an error!
-
+To demonstrate when a character will not be converted, here's one more example trying to pass `body_mass_g` into the `by` argument of our function as a `chr` resulting in an error:
 ```{r error=TRUE}
-iris |> mutate(Sepal.Width = as.character(Sepal.Width)) |>
-  basic_stats(Sepal.Length, Sepal.Width)
+penguins |> mutate(body_mass_g = as.character(body_mass_g)) |>
+  basic_stats(bill_length_mm, body_mass_g)
 ```
 
-Finally, by default, `basic_stats()` removes missing values from the data to enable a clean computation. But, if you like to live dangerously, you can change this by explicitly passing the argument `na.rm = FALSE` into the function. Let's see it in action:
-
+By default, `basic_stats()` removes missing values from the data to enable a clean computation. But, if you like to live dangerously, you can change this by explicitly passing the argument `na.rm = FALSE` into the function. Let's see it in action:
 ```{r}
-library(dplyr)
-
-set.seed(42)
-
-# Create a copy of the iris dataset and introduce NAs in Sepal.Length
-iris_with_na <- iris |>
-  mutate(Sepal.Length = replace(Sepal.Length, sample(n(), 10), NA))
-
-basic_stats(iris_with_na, Sepal.Length, Species, na.rm = FALSE)
+basic_stats(penguins, bill_length_mm, species, na.rm = FALSE)
 ```
 
-Yikes! Let's get back to form...
-
+We can also pass additional arguments into the function to customize the output further. By passing `trim = 0.1` into the function, for example, we can change the mean calculation by trimming the 10% most extreme (i.e. highest/lowest) values.
 ```{r}
-basic_stats(iris_with_na, Sepal.Length, Species)
+basic_stats(penguins, bill_length_mm, species, trim = 0.1)
 ```
 
-Much better. *And there you have `basic_stats()`!*
+*And there you have `basic_stats()`!*
 
 ## Exercise 4: Test the Function
-
-We've demonstrated what does/doesn't work when using `basic_stats()`, but we should formally test it now!
-
+Now that we've demonstrated what does/doesn't work when using `basic_stats()`, we should formally test a few things.
 ```{r}
 library(testthat)
-```
 
-
-```{r}
 # Create test dataset with NAs
 set.seed(12)
 iris_with_na <- iris |>
   mutate(Sepal.Length = replace(Sepal.Length, sample(n(), 10), NA))
-
-basic_stats(iris, Sepal.Length, Species)
 
 test_that("mean, median, range, and n are computed and output is structured as intended", {
   result <- basic_stats(iris_with_na, Sepal.Length, Species)
@@ -185,17 +183,13 @@ iris_chr_test <- iris |>
 test_that("variable types are handled appropriately", {
   
   expect_error(basic_stats(iris_chr_test, Sepal.Width, Sepal.Length), 
-               "Sepal.Length must be a factor or a character variable with fewer than 20 unique values.")
+               "Sepal.Length must be a non-empty factor or a character variable with fewer than 20 unique values.")
   expect_error(basic_stats(iris_num_test, Sepal.Length, Species),
                "Variable Sepal.Length must be numeric.")
   expect_warning(basic_stats(iris_chr_test, Sepal.Width, Species), 
                  "Species has been converted to a factor with 3 levels.")
 })
 ```
-
-
-
-
 
 
 
