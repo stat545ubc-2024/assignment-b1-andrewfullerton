@@ -24,7 +24,7 @@ output: github_document
 #' # Basic usage:
 #' basic_stats(penguins, bill_length_mm, species) # displays summary stats by species
 #' # Advanced usage:
-#' basic_stats(penguins, bill_length_mm, species, na.rm = FALSE, trim = 0.1) # trims 10% of largest/smallest values when computing mean
+#' basic_stats(penguins, bill_length_mm, species, na.rm = FALSE, trim = 0.1) # trims 10% of largest/smallest values when computing mean and includes NAs
 basic_stats <- function(data, x, by, na.rm = TRUE, ...) {
   # Check if dependencies are installed and load
   if (!requireNamespace("tidyverse", quietly = TRUE)) {
@@ -185,7 +185,7 @@ basic_stats(penguins, bill_length_mm, species, trim = 0.1)
 Now that we've demonstrated what does/doesn't work when using `basic_stats()`, we should formally test a few things.
 
 ```{r}
-library(testthat)
+suppressMessages(library(testthat))
 
 # Create test dataset with NAs
 set.seed(12) # set starting point for randomization
@@ -195,10 +195,10 @@ iris_with_na <- iris |>
 test_that("mean, median, range, and n are computed and output is structured as intended", {
   result <- basic_stats(iris_with_na, Sepal.Length, Species)
   
-  expect_s3_class(result, "tbl_df")
-  expect_equal(nrow(result), length(levels(iris$Species)))
-  expect_true(all(c("mean", "median", "range", "n") %in% names(result)))
-  expect_false(any(is.na(result)))
+  expect_s3_class(result, "tbl_df") # tibble output
+  expect_equal(nrow(result), length(levels(iris$Species))) # 1 row per species
+  expect_true(all(c("mean", "median", "range", "n") %in% names(result))) # summary stats as columns
+  expect_false(any(is.na(result))) # no null values made it into the output
 })
 ```
 
