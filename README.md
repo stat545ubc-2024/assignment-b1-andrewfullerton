@@ -1,7 +1,8 @@
-# Welcome to my Assignment B1 repo
-This repo contains files and code pertaining to *STAT545A*, a statistics course at UBC. 
+# Welcome to my assignment B1 repo
+This repo contains files and code pertaining to **STAT545A**, a statistics course at UBC. **Assignment B1** covers making a function in R, documenting it, and testing it. 
 
-*Assignment* B1 covers making a function in R, documenting it, and testing it. I've decided to make a function called `basic_stats()` that produces basic summary statistics (mean, median, range, sample size) based on levels of a grouping variable (e.g. stratified estimates). 
+## My function: `basic_stats()`
+Produces basic summary statistics (mean, median, range, sample size) based on levels of a specified grouping variable (e.g. stratified summary statistics). 
 
 ### Here's what you need to know:
 * `b1_function.md` contains all the code and outputs relevant to the assignment including the function, its documentation, some examples, and testing.
