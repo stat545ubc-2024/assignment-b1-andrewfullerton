@@ -12,4 +12,4 @@ Produces basic summary statistics (mean, median, range, sample size) based on le
 
 ### To poke around:
 1. If you only want to view my code, then go ahead and open `b1_function.md` - everything you need is there.
-2. If you want to run my code on your local machine, then you'll want to clone the repo and crack `b1_function.Rmd` open in *RStudio*. You can clone the repo using the following git command: `git clone https://github.com/stat545ubc-2024/assignment-b1-andrewfullerton/edit/main/README.md`.
+2. If you want to run my code on your local machine, then you'll want to clone the repo and crack `b1_function.Rmd` open in *RStudio*. You can clone the repo using the following git command: `git clone https://github.com/stat545ubc-2024/assignment-b1-andrewfullerton`.
