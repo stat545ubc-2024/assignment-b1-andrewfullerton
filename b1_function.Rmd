@@ -106,7 +106,7 @@ library(palmerpenguins) # load library containing penguins dataset
 glimpse(penguins)
 ```
 
-`penguins` is a data frame composed of 8 variables (5 numeric variables, and 3 factor variables) and 344 rows that we can use to demonstrate how `basic_stats()` works!
+`penguins` is a dataset composed of 8 variables (5 numeric variables, and 3 factor variables) and 344 rows that we can use to demonstrate how `basic_stats()` works!
 
 ### How it works:
 

@@ -129,7 +129,7 @@ glimpse(penguins)
     ## $ sex               <fct> male, female, female, NA, female, male, female, male…
     ## $ year              <int> 2007, 2007, 2007, 2007, 2007, 2007, 2007, 2007, 2007…
 
-`penguins` is a data frame composed of 8 variables (5 numeric variables,
+`penguins` is a dataset composed of 8 variables (5 numeric variables,
 and 3 factor variables) and 344 rows that we can use to demonstrate how
 `basic_stats()` works!
 
