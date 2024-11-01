@@ -6,54 +6,153 @@ output: github_document
 ---
 
 
-### Exercise 1
+### Exercise 1: Make a Function
 ```{r}
-
 basic_stats <- function(data, x, by, na.rm = TRUE) {
-  library(tidyverse)
-  
-  if(!is.data.frame(data) && !is_tibble(data)) {
-    stop("Error: input data must be a dataframe or a tibble")
+  # Check if dependencies are installed/loaded
+  if (!requireNamespace("dplyr", quietly = TRUE)) {
+    stop("The 'dplyr' package is required. Please install it to proceed.")
+  } else if (!"dplyr" %in% loadedNamespaces()) {
+    suppressPackageStartupMessages(library(dplyr))
   }
-  
-  data <- as_tibble(data)
-  
-  if(!all(c(deparse(substitute(x)), deparse(substitute(by))) %in% names(data))) {
-    stop("Error: the variables you've chosen do not exist in your data")
+
+  # Check if input 'data' is a non-empty dataframe or tibble
+  if (!is.data.frame(data) && !is_tibble(data)) {
+    stop("Input data must be a dataframe or a tibble.")
+  } else if (nrow(data) == 0 || ncol(data) == 0) {
+    stop("The dataframe is empty.")
   }
-  
+
+  data <- as_tibble(data) # Convert to tibble for consistency
+
+  # Store the variable names as strings
+  x_name <- deparse(substitute(x))
+  by_name <- deparse(substitute(by))
+
+  # Check if 'x' and 'by' exist in the data
+  if (!all(c(x_name, by_name) %in% names(data))) {
+    stop("The variables you've chosen do not exist in your data")
+  }
+
+  # Check if 'x' is numeric
   if (!is.numeric(data |> pull({{x}}))) {
-    stop("Error: ", deparse(substitute(x)), " is not numeric.")
+    stop("The variable, ", x_name, ", is not numeric.")
   }
-  
+
+  # Check if 'by' is or can be converted to a factor
+  by_var <- data |> pull({{by}})
+
+  if (is.factor(by_var)) {
+    # Proceed with function
+  } else if (is.character(by_var)) {
+    unique_count <- length(unique(by_var))
+    if (unique_count < 20) {
+      data <- data |> mutate({{by}} := as.factor({{by}}))
+      warning("The grouping variable, ", by_name, ", has been converted to a factor with ", unique_count, " levels.")
+    } else {
+      stop("The grouping variable, ", by_name, ", is a character with ", unique_count, " unique values and is not suitable for conversion to a factor.")
+    }
+  } else {
+    stop("The grouping variable, ", by_name, ", must be either a factor or a character.")
+  }
+
+  # Final checks for the grouping variable
   if (!is.factor(data |> pull({{by}}))) {
-    stop("Error: the grouping variable, ", deparse(substitute(by)), ", is not a factor.")
+    stop("The grouping variable, ", by_name, ", is not a factor.")
+  } else if (length(levels(data |> pull({{by}}))) < 2) {
+    stop("The grouping variable, ", by_name, ", must have at least two levels.")
+  }
+
+  if (!na.rm) {
+    warning("na.rm is set to FALSE; calculations may include NA values. Seems like you like to live dangerously...")
   }
   
-  if (length(levels(data |> pull({{by}}))) < 2) {
-    stop("Error: The grouping variable ", deparse(substitute(by)), " must have at least two levels.")
-  }
-  
-  # the function
-  data |>
-    group_by({{by}}) |>
-      summarise(mean = mean({{x}}, na.rm = na.rm),
-                median = median({{x}}, na.rm = na.rm),
-                range = paste0(min({{x}}, na.rm = na.rm), " - ",
-                              max({{x}}, na.rm = na.rm)),
-                n = n())
+  # Run the function
+  result <- data |> 
+    group_by({{by}}) |> 
+    summarise(mean = mean({{x}}, na.rm = na.rm),
+              median = median({{x}}, na.rm = na.rm),
+              range = paste0(min({{x}}, na.rm = na.rm), " - ",
+                             max({{x}}, na.rm = na.rm)),
+              n = n(), .groups = "drop")
+
+  return(result)  # Return the result
 }
 
-
 ```
 
+### Exercise 2: Document your Function
+
+### Exercise 3: Include examples
+To demonstrate how this function works (and doesn't work), we can use a tried and true dataset: Iris! Iris is a dataframe composed of 5 variables: 4 numeric that measure dimensions of the flowers, and 1 factor variable that specifies the species. We also see that we have 150 rows of data.
 
 ```{r}
-library(palmerpenguins)
-
-head(penguins)
-
-basic_stats(penguins, bill_length_mm, island)
+head(iris)
 ```
+
+#### How `basic_stats()` works:
+`basic_stats()` takes as input a dataframe or tibble, a numeric variable to compute summary statistics for, and a grouping by variable by which to stratify those summary statistics. Let's see it in action:
+```{r}
+basic_stats(iris, Sepal.Length, Species)
+```
+Wow! It's like magic.
+
+To be `base R` friendly and `tidyverse` friendly, `basic_stats()` accepts either a dataframe or a tibble as input data. Here's an example with Iris as a `df`...
+```{r}
+basic_stats(iris, Sepal.Length, Species)
+```
+
+... and here's an example using Iris as a `tibble`. In both cases, the final output is a tibble (courtesy of `dplyr`).
+```{r}
+iris |> as_tibble() |>
+  basic_stats(Sepal.Length, Species)
+```
+
+Sometimes when we import a dataset into R, our categorical variables will be classified as `chr` variables. For this reason, the `by` argument can accept either a `fctr` or a `chr`. It should, however, be noted that this function assumes that a `chr` variable with more than 20 unique levels is, in fact, storing text data rather than categorical data; to avoid printing hundred of stratified statistics, the function will throw an error instead of converting the `chr` to a `fctr`. Here's an example with Species as a `fctr`...
+```{r}
+basic_stats(iris, Sepal.Length, Species)
+```
+
+... and here's an example using Species as a `chr` - as you can see, the outputs are identical ...
+```{r warning=TRUE}
+iris |> mutate(Species = as.character(Species)) |>
+  basic_stats(Sepal.Length, Species)
+```
+
+... and here's a one more example using Sepal.Width as a `chr` resulting in an error!
+```{r error=TRUE}
+iris |> mutate(Sepal.Width = as.character(Sepal.Width)) |>
+  basic_stats(Sepal.Length, Sepal.Width)
+```
+
+Finally, by default, `basic_stats()` removes missing values from the data to enable a clean computation. But, if you like to live dangerously, you can change this by explicitly passing the argument `na.rm = FALSE` into the function. Let's see it in action:
+```{r}
+library(dplyr)
+
+set.seed(42)
+
+# Create a copy of the iris dataset and introduce NAs in Sepal.Length
+iris_with_na <- iris |>
+  mutate(Sepal.Length = replace(Sepal.Length, sample(n(), 10), NA))
+
+basic_stats(iris_with_na, Sepal.Length, Species, na.rm = FALSE)
+```
+
+Yikes! Let's get back to form...
+```{r}
+basic_stats(iris_with_na, Sepal.Length, Species)
+```
+
+Much better. _And there you have `basic_stats()`!_
+
+### Exercise 4: Test the Function
+We've demonstrated what does/doesn't work when using `basic_stats()`, but we should formally test it now!
+```{r}
+
+```
+
+
+
+
 
 
