@@ -3,7 +3,7 @@ Assignment B1
 Andrew J. Fullerton
 2024-10-31
 
-## Exercise 1 & 2: Make and document a function
+## Exercise 1 & 2: make and document a function
 
 ``` r
 #' @title Basic Summary Statistics by Strata
@@ -92,7 +92,7 @@ basic_stats <- function(data, x, by, na.rm = TRUE, ...) {
 }
 ```
 
-## Exercise 3: Examples
+## Exercise 3: examples
 
 To demonstrate how this function works (and doesn’t work), we can use a
 tried-and-true dataset among R users: `penguins`!
@@ -249,7 +249,7 @@ penguins |>
 avoid producing hundreds of rows worth of summary statistics, the
 function throws an error here instead.
 
-### Additional functionality: na.rm and …
+### Example 3: additional functionality using na.rm and …
 
 By default, `basic_stats()` removes missing values from the data to
 enable a clean computation. But, if you like to live dangerously, you
@@ -286,7 +286,7 @@ basic_stats(penguins, bill_length_mm, species, trim = 0.1)
 
 *And there you have `basic_stats()`!*
 
-## Exercise 4: Test the Function
+## Exercise 4: test the Function
 
 Now that we’ve demonstrated what does/doesn’t work when using
 `basic_stats()`, we should formally test a few things.
